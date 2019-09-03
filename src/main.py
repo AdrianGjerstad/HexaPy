@@ -6,6 +6,7 @@
 
 import sys
 import curses
+import math
 
 stdscreen = None
 
@@ -21,6 +22,8 @@ EXIT_FAILURE = 1
 ########################################
 
 PAIR_EMPTY = 1
+
+data = []
 
 def getTerminalSize():
     import os
@@ -61,7 +64,7 @@ def reset_data(screen, width, height):
             screen.addstr(j, i*3, "00", curses.color_pair(PAIR_EMPTY) | curses.A_BOLD)
             screen.addstr(j, (width-16)+i, ".", curses.color_pair(PAIR_EMPTY) | curses.A_BOLD)
 
-    curses.setsyx(0, 0)
+    screen.move(0, 0)
     screen.refresh()
 
 # C-style main function `int main(int argc, char** argv)`
@@ -69,15 +72,37 @@ def main(stdscreen):
     curses.use_default_colors()
     curses.init_pair(PAIR_EMPTY, curses.COLOR_BLACK, -1)
     height, width = stdscreen.getmaxyx()
-    w, = getTerminalSize()
+    w, h = getTerminalSize()
     stdscreen.resize(height, w)
     height, width = stdscreen.getmaxyx()
 
     reset_data(stdscreen, width, height)
 
-    # Successful Exit Sequence
+    while True:
+        key = stdscreen.getch()
+        y, x = stdscreen.getyx()
 
-    stdscreen.getkey()
-
+        if ((key >= ord('0') and key <= ord('9')) or (key >= ord('a') and key <= ord('f')) or (key >= ord('A') and key <= ord('F'))) and x < 16*3:
+            stdscreen.addch(chr(key).upper())
+            y, x = stdscreen.getyx()
+            if x % 3 == 1:
+                stdscreen.addch('0')
+                stdscreen.move(y, x)
+            y, x = stdscreen.getyx()
+            if x % 3 == 2:
+                stdscreen.addch(' ')
+            y, x = stdscreen.getyx()
+            if x >= 16*3:
+                stdscreen.move(y+1, 0)
+            stdscreen.refresh()
+        elif key >= 258 and key <= 261:
+            if key == 258:
+                stdscreen.move(y+1, x)
+            elif key == 259:
+                stdscreen.move(y-1, x)
+            elif key == 260:
+                stdscreen.move(y, math.floor((x-3)/3)*3)
+            elif key == 261:
+                stdscreen.move(y, math.floor((x+3)/3)*3)
 
 curses.wrapper(main)
